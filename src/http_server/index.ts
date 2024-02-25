@@ -3,6 +3,8 @@ import * as path from 'path';
 import * as http from 'http';
 import { WebSocketServer } from 'ws';
 
+import { CommandData, CustomSocket, UserRegistration, Winner, CurrentSessionUser, Ship, Attack, ShipInBattle } from './models';
+
 export const httpServer = http.createServer(function (req, res) {
     const __dirname = path.resolve(path.dirname(''));
     const file_path = __dirname + (req.url === '/' ? '/front/index.html' : '/front' + req.url);
@@ -20,32 +22,32 @@ export const httpServer = http.createServer(function (req, res) {
 export const wss = new WebSocketServer({ port: 3000 });
 
 const usersCollection = new Map();
-let dataFromUser;
-const winnersArray = [{ name: 'default winner', wins: 100 }];
-let dataReady;
+let dataFromUser : CommandData;
+const winnersArray: Winner[] = [{ name: 'default winner', wins: 100 }];
+let dataReady: CommandData;
 let updateRooms = {
     type: 'update_room',
     data: '[]',
     id: 0
 };
-let winnersData;
+let winnersData : CommandData;
 let players = 0;
 let socketCounter = 1;
-let firstWS;
-let secondWS;
-let currentPos1;
-let currentPos2;
-let currentGamePlayer1;
-let currentGamePlayer2;
-let turn;
+let firstWS: number;
+let secondWS: number;
+let currentPos1: CommandData;
+let currentPos2: CommandData;
+let currentGamePlayer1: number;
+let currentGamePlayer2: number;
+let turn: CommandData;
 let game = new Map();
 let killedCount = new Map();
-let blockedPlayer;
+let blockedPlayer: number;
 
-let roomsArray = [];
-let arrayOfAttack = new Map() // TODO coords of attacks(strings). Need for implement randomAttack.
+let roomsArray: string[] = [];
+let arrayOfAttack = new Map();
 
-wss.on('connection', (ws, request) => {
+wss.on('connection', (ws: CustomSocket) => {
     console.log('connection ready');
 
     ws.id = socketCounter++;
@@ -53,8 +55,10 @@ wss.on('connection', (ws, request) => {
     ws.on('error', console.error);
  
     ws.on('message', function message(data) {
-        //console.log(`Received message ${data} FROM Socket N ${ws.id}`);
-        dataFromUser = JSON.parse(data);
+        const dataToString = data.toString();
+        //console.log(`Received message ${dataToString} FROM Socket N ${ws.id}`);
+        //console.log('data type', typeof dataToString)
+        dataFromUser = JSON.parse(dataToString);
 
         switch (dataFromUser.type) {
             case "reg":
@@ -78,7 +82,7 @@ wss.on('connection', (ws, request) => {
                 break;
             case "create_room":
                 
-                updateRooms = createRoom(JSON.parse(dataReady.data));
+                updateRooms = createRoom(JSON.parse(dataReady.data)); // TODO dataReady what is model?
 
                 roomsArray.push(updateRooms.data);
 
@@ -145,7 +149,7 @@ wss.on('connection', (ws, request) => {
                 break;
             case "attack":
                 const attack = JSON.parse(dataFromUser.data);
-                console.log('notRandomAttack:', attack);
+                //console.log('notRandomAttack:', attack);
                 const enemy = attack.indexPlayer === currentGamePlayer1 ? currentGamePlayer2 : currentGamePlayer1;
                 setAttackStatus(attack, enemy, ws.id);
                 break;
@@ -155,7 +159,7 @@ wss.on('connection', (ws, request) => {
                 const currentEnemy = player === currentGamePlayer1 ? currentGamePlayer2 : currentGamePlayer1;
                 const gameId = playerData.gameId;
                 const array = arrayOfAttack.get(currentEnemy);
-                console.log('array of attacks', array);
+                //console.log('array of attacks', array);
                 const { x, y } = generateCoord(array);
                 const randomAttack = { gameId, x, y, indexPlayer: player };
                 setAttackStatus(randomAttack, currentEnemy, ws.id);
@@ -173,7 +177,7 @@ wss.on('connection', (ws, request) => {
     
 })
 
-function createRoom(user) {
+function createRoom(user: UserRegistration) {
     updateRooms = {
         type: "update_room",
         data: JSON.stringify([
@@ -192,7 +196,8 @@ function createRoom(user) {
     return updateRooms;
 }
 
-function createUser(userData) {
+function createUser(userData: string) {
+    
     return {
         type: "reg",
         data: JSON.stringify({
@@ -205,12 +210,12 @@ function createUser(userData) {
     }
 }
 
-function checkExistingUser(userData) {
+function checkExistingUser(userData: string) {
     const users = Array.from(usersCollection.values()).map(({userData})=>userData);
     return users.includes((userData).toString());
 }
 
-function createRegError(userData) {
+function createRegError(userData: string) {
     return {
         type: "reg",
         data: JSON.stringify({
@@ -223,7 +228,7 @@ function createRegError(userData) {
     } 
 }
 
-function createWinners(winners) {
+function createWinners(winners: Winner[]) {
     return {
         type: "update_winners",
         data: JSON.stringify(winners),
@@ -231,15 +236,15 @@ function createWinners(winners) {
         }
 }
 
-function deleteOccupiedRoom(roomIndex) {
-    console.log('deleteFunc data=', updateRooms.data)
-    console.log('deleteFunc index=', roomIndex)
+// function deleteOccupiedRoom(roomIndex) {
+//     console.log('deleteFunc data=', updateRooms.data)
+//     console.log('deleteFunc index=', roomIndex)
 
-}
+// }
 
-function writePlayers(user1, user2) { }
+// function writePlayers(user1, user2) { }
 
-function createGame(game, player) {
+function createGame(game: number, player: number) {
     return {
         type: "create_game", 
         data: JSON.stringify(
@@ -252,23 +257,24 @@ function createGame(game, player) {
     }
 }
 
-function findUserCreatedRoom(array, Id) {
+function findUserCreatedRoom(array: string[], id: number) {
     const arrayNew = array.map(room => {
-        return JSON.parse(room);
+        const parsed = JSON.parse(room)[0]
+        return parsed;
     })
-    const currentGame = arrayNew[0].filter(({ roomId }) => roomId === Id);
+    const currentGame = arrayNew.filter(({ roomId }) => roomId === id);
     const userCreatedGame = currentGame[0].roomUsers[0].index;
 
     return userCreatedGame;
 }
 
-function findWs(users, id) {
+function findWs(users: CurrentSessionUser[], id: number) {
     const index = users.findIndex(({ indexUser }) => indexUser === id);
 
     return index + 1;
 }
 
-function startGame(shipsPlace, index) {
+function startGame(shipsPlace: Ship[], index: number) {
     const ships = markShipsPosition(shipsPlace);
     game.set(index, ships);
     return {
@@ -281,16 +287,16 @@ function startGame(shipsPlace, index) {
     }
 }
 
-function setAttackStatus(attack, enemy, socketId) {
+function setAttackStatus(attack: Attack, enemy: number, socketId: number) {
     if (attack.indexPlayer === blockedPlayer) {
         return;
     }
     const attackCoord = JSON.stringify({ x: attack.x, y: attack.y });
-    console.log('Attack coords = ', attackCoord)
+    //console.log('Attack coords = ', attackCoord)
     const attackArray = arrayOfAttack.get(enemy) ?? [];
     attackArray.push(attackCoord)
     arrayOfAttack.set(enemy, attackArray)
-    const enemyField = game.get(enemy);
+    const enemyField: ShipInBattle[] = game.get(enemy);
     let attackStatus = 'miss';
     let killedShip;
     const enemyAfterAttack = enemyField.map(ship => {
@@ -315,18 +321,18 @@ function setAttackStatus(attack, enemy, socketId) {
     switchAttackStatus(attackStatus, attack.indexPlayer, enemy, attackCoord, killedShip);
 }
 
-function switchAttackStatus(status, player, enemy, attackCoord, killedShip) {
-    let attackAnswer1;
+function switchAttackStatus(status: string, player: number, enemy: number, attackCoord: string, killedShip: string[] | undefined) {
+    let attackAnswer: CommandData;
 
     if (status === 'miss') {
-        attackAnswer1 = createAnswerForAttack('miss', player, attackCoord);
+        attackAnswer = createAnswerForAttack('miss', player, attackCoord);
         turn = turnPlayer(enemy);
         blockedPlayer = player;
         wss.clients.forEach((client) => {
             if (client.id === firstWS) {
-                client.send(JSON.stringify(attackAnswer1));
+                client.send(JSON.stringify(attackAnswer));
             } else if (client.id === secondWS) {
-                client.send(JSON.stringify(attackAnswer1));
+                client.send(JSON.stringify(attackAnswer));
             }
         })
     } else if (status === 'killed') {
@@ -334,25 +340,25 @@ function switchAttackStatus(status, player, enemy, attackCoord, killedShip) {
         // add to 'arrayOfAttack' ceils with status 'miss' after killing ship 
         turn = turnPlayer(player);
         blockedPlayer = enemy;
-        killedShip.forEach(coord => {
-            attackAnswer1 = createAnswerForAttack('killed', player, coord);
+        killedShip && killedShip.forEach(coord => {
+            attackAnswer = createAnswerForAttack('killed', player, coord);
             wss.clients.forEach((client) => {
                 if (client.id === firstWS) {
-                    client.send(JSON.stringify(attackAnswer1));
+                    client.send(JSON.stringify(attackAnswer));
                 } else if (client.id === secondWS) {
-                    client.send(JSON.stringify(attackAnswer1));
+                    client.send(JSON.stringify(attackAnswer));
                 }
             })
         })
     } else if (status === 'shot') {
-        attackAnswer1 = createAnswerForAttack('shot', player, attackCoord)
+        attackAnswer = createAnswerForAttack('shot', player, attackCoord)
         turn = turnPlayer(player);
         blockedPlayer = enemy;
         wss.clients.forEach((client) => {
             if (client.id === firstWS) {
-                client.send(JSON.stringify(attackAnswer1));
+                client.send(JSON.stringify(attackAnswer));
             } else if (client.id === secondWS) {
-                client.send(JSON.stringify(attackAnswer1));
+                client.send(JSON.stringify(attackAnswer));
             }
         })
     }
@@ -366,7 +372,7 @@ function switchAttackStatus(status, player, enemy, attackCoord, killedShip) {
 
 }
     
-function turnPlayer(nextPlayer) {
+function turnPlayer(nextPlayer: number) {
     return {
         type: "turn",
         data: JSON.stringify(
@@ -378,8 +384,8 @@ function turnPlayer(nextPlayer) {
     }
 }
 
-function markShipsPosition(shipsFromUser) {
-    const shipsLocation = [];
+function markShipsPosition(shipsFromUser: Ship[]) {
+    const shipsLocation: ShipInBattle[] = [];
    
     let shipElement;
     shipsFromUser.forEach((ship) => {
@@ -420,7 +426,7 @@ function markShipsPosition(shipsFromUser) {
     return shipsLocation
 }
 
-function createAnswerForAttack(status, player, position) {
+function createAnswerForAttack(status: string, player: number, position: string) {
     return {
         type: "attack",
         data: JSON.stringify(
@@ -433,7 +439,7 @@ function createAnswerForAttack(status, player, position) {
     }
 }
 
-function setFinishGame(indexPlayer) {
+function setFinishGame(indexPlayer: number) {
     return {
         type: "finish",
         data: JSON.stringify(
@@ -445,7 +451,7 @@ function setFinishGame(indexPlayer) {
     }
 }
 
-function showFinish(player, socketId) {
+function showFinish(player: number, socketId: number) {
     console.log('finish game')
     const finishGame = setFinishGame(player)
     const winnerName = JSON.parse(usersCollection.get(socketId).userData).name
@@ -461,7 +467,7 @@ function showFinish(player, socketId) {
     })
 }
 
-function generateCoord(array) {
+function generateCoord(array: string[]) {
     let randomX;
     let randomY;
     let coords;
@@ -471,6 +477,6 @@ function generateCoord(array) {
         coords = JSON.stringify({ x: randomX, y: randomY });
     } while (array.includes(coords));
 
-    console.log('random coords x,y:', coords);
+    //console.log('random coords x,y:', coords);
     return {x: randomX, y: randomY}
 }
