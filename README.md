@@ -11,13 +11,13 @@
 
 `npm run start:dev`
 
-* App served @ `http://localhost:8181` with nodemon
+* App served @ `http://localhost:8181` with tsx watch
 
 **Production**
 
 `npm run start`
 
-* App served @ `http://localhost:8181` without nodemon
+* App served @ `http://localhost:8181` with tsx
 
 ---
 
@@ -25,7 +25,7 @@
 
 Command | Description
 --- | ---
-`npm run start:dev` | App served @ `http://localhost:8181` with nodemon
-`npm run start` | App served @ `http://localhost:8181` without nodemon
+`npm run start:dev` | App served @ `http://localhost:8181` with tsx watch
+`npm run start` | App served @ `http://localhost:8181` with tsx
 
 **Note**: replace `npm` with `yarn` in `package.json` if you use yarn.
