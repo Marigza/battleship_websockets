@@ -66,6 +66,9 @@ export function switchCommand(dataFromUser: CommandData, ws: CustomSocket) {
         });
 
         ws.send(JSON.stringify(dataReady));
+        console.log(`send command "${dataReady.type}": ${dataReady.data}`);
+        console.log(`send command "${winnersData.type}": ${winnersData.data}`);
+        console.log(`send command "${updateRooms.type}": ${updateRooms.data}`);
 
         SocketArray.forEach((client) => {
           client.send(JSON.stringify(winnersData));
@@ -86,6 +89,9 @@ export function switchCommand(dataFromUser: CommandData, ws: CustomSocket) {
 
       roomsArray.push(newRoom);
       updateRooms = createRoom(roomsArray);
+
+      console.log(`send command "${winnersData.type}": ${winnersData.data}`);
+      console.log(`send command "${updateRooms.type}": ${updateRooms.data}`);
 
       SocketArray.forEach((client) => {
         client.send(JSON.stringify(winnersData));
@@ -122,6 +128,14 @@ export function switchCommand(dataFromUser: CommandData, ws: CustomSocket) {
         id: 0,
       };
 
+      console.log(
+        `send command "${gameDataForAdded.type}": ${gameDataForAdded.data}`,
+      );
+      console.log(
+        `send command "${gameDataForCreator.type}": ${gameDataForCreator.data}`,
+      );
+      console.log(`send command "${updateRooms.type}": ${updateRooms.data}`);
+
       SocketArray.forEach((client) => {
         if (client.id === ws.id) {
           client.send(JSON.stringify(gameDataForAdded));
@@ -157,9 +171,17 @@ export function switchCommand(dataFromUser: CommandData, ws: CustomSocket) {
           if (client.id === firstWS) {
             client.send(JSON.stringify(currentPos1));
             client.send(JSON.stringify(turn));
+            console.log(
+              `send command "${currentPos1.type}": ${currentPos1.data}`,
+            );
+            console.log(`send command "${turn.type}": ${turn.data}`);
           } else if (client.id === secondWS) {
             client.send(JSON.stringify(currentPos2));
             client.send(JSON.stringify(turn));
+            console.log(
+              `send command "${currentPos2.type}": ${currentPos2.data}`,
+            );
+            console.log(`send command "${turn.type}": ${turn.data}`);
           }
         });
         players = 0;
@@ -185,6 +207,7 @@ export function switchCommand(dataFromUser: CommandData, ws: CustomSocket) {
       setAttackStatus(randomAttack, currentEnemy, ws.id);
       break;
     default:
+      console.log('this command is not handling');
   }
 }
 
@@ -240,11 +263,18 @@ function switchAttackStatus(
     attackAnswer = createAnswerForAttack('miss', player, attackCoord);
     turn = turnPlayer(enemy);
     blockedPlayer = player;
+
     SocketArray.forEach((client) => {
       if (client.id === firstWS) {
         client.send(JSON.stringify(attackAnswer));
+        console.log(
+          `send command "${attackAnswer.type}": ${attackAnswer.data}`,
+        );
       } else if (client.id === secondWS) {
         client.send(JSON.stringify(attackAnswer));
+        console.log(
+          `send command "${attackAnswer.type}": ${attackAnswer.data}`,
+        );
       }
     });
   } else if (status === 'killed') {
@@ -258,8 +288,14 @@ function switchAttackStatus(
         SocketArray.forEach((client) => {
           if (client.id === firstWS) {
             client.send(JSON.stringify(attackAnswer));
+            console.log(
+              `send command "${attackAnswer.type}": ${attackAnswer.data}`,
+            );
           } else if (client.id === secondWS) {
             client.send(JSON.stringify(attackAnswer));
+            console.log(
+              `send command "${attackAnswer.type}": ${attackAnswer.data}`,
+            );
           }
         });
       });
@@ -270,16 +306,25 @@ function switchAttackStatus(
     SocketArray.forEach((client) => {
       if (client.id === firstWS) {
         client.send(JSON.stringify(attackAnswer));
+        console.log(
+          `send command "${attackAnswer.type}": ${attackAnswer.data}`,
+        );
       } else if (client.id === secondWS) {
         client.send(JSON.stringify(attackAnswer));
+        console.log(
+          `send command "${attackAnswer.type}": ${attackAnswer.data}`,
+        );
       }
     });
   }
+
   SocketArray.forEach((client) => {
     if (client.id === firstWS) {
       client.send(JSON.stringify(turn));
+      console.log(`send command "${turn.type}": ${turn.data}`);
     } else if (client.id === secondWS) {
       client.send(JSON.stringify(turn));
+      console.log(`send command "${turn.type}": ${turn.data}`);
     }
   });
 }
@@ -293,8 +338,10 @@ function showFinish(player: number, socketId: number) {
   SocketArray.forEach((client) => {
     if (client.id === firstWS) {
       client.send(JSON.stringify(finishGame));
+      console.log(`send command "${finishGame.type}": ${finishGame.data}`);
     } else if (client.id === secondWS) {
       client.send(JSON.stringify(finishGame));
+      console.log(`send command "${finishGame.type}": ${finishGame.data}`);
     }
     client.send(JSON.stringify(winnersData));
   });

@@ -27,17 +27,21 @@ let dataFromUser: CommandData;
 let socketCounter = 1;
 
 wss.on('connection', (ws: CustomSocket) => {
-  console.log('connection ready');
-
   ws.id = socketCounter++;
+
+  console.log(`${ws.id} connection ready`);
 
   SocketArray.push(ws);
 
-  ws.on('error', console.error);
+  ws.on('error', (ws: CustomSocket, err: Error) => {
+    console.error(err);
+    ws.close();
+  });
 
   ws.on('message', function message(data) {
     const dataToString = data.toString();
     dataFromUser = JSON.parse(dataToString);
+    console.log(`get command "${dataFromUser.type}": ${dataFromUser.data}`);
 
     switchCommand(dataFromUser, ws);
   });
