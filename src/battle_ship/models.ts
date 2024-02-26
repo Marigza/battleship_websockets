@@ -22,6 +22,11 @@ export interface UserData {
   password: string;
 }
 
+export interface Room {
+  roomId: number;
+  roomUsers: { name: string; index: number }[];
+}
+
 export interface Winner {
   name: string;
   wins: number;

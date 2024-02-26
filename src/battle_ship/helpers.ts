@@ -1,4 +1,4 @@
-import { CurrentSessionUser, Ship, ShipInBattle } from './models';
+import { CurrentSessionUser, Room, Ship, ShipInBattle } from './models';
 
 export function checkExistingUser(
   userData: string,
@@ -10,13 +10,9 @@ export function checkExistingUser(
   return users.includes(userData.toString());
 }
 
-export function findUserCreatedRoom(array: string[], id: number) {
-  const arrayNew = array.map((room) => {
-    const parsed = JSON.parse(room)[0];
-    return parsed;
-  });
-  const currentGame = arrayNew.filter(({ roomId }) => roomId === id);
-  const userCreatedGame = currentGame[0].roomUsers[0].index;
+export function findUserCreatedRoom(array: Room[], id: number) {
+  const currentGame = array.find(({ roomId }) => roomId === id);
+  const userCreatedGame = currentGame!.roomUsers[0].index;
 
   return userCreatedGame;
 }

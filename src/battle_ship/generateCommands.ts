@@ -1,23 +1,13 @@
 import { AnswerType } from './answerType';
 import { markShipsPosition } from './helpers';
-import { Ship, UserRegistration, Winner } from './models';
+import { Room, Ship, Winner } from './models';
 
 export const game = new Map();
 
-export function createRoom(user: UserRegistration): AnswerType {
+export function createRoom(roomArray: Room[]): AnswerType {
   return {
     type: 'update_room',
-    data: JSON.stringify([
-      {
-        roomId: Date.now(),
-        roomUsers: [
-          {
-            name: user.name,
-            index: user.index,
-          },
-        ],
-      },
-    ]),
+    data: JSON.stringify(roomArray),
     id: 0,
   };
 }

@@ -5,6 +5,7 @@ import {
   CurrentSessionUser,
   Attack,
   ShipInBattle,
+  Room,
 } from './models';
 import {
   checkExistingUser,
@@ -28,9 +29,10 @@ import {
 const usersCollection = new Map<number, CurrentSessionUser>();
 const winnersArray: Winner[] = [{ name: 'default winner', wins: 100 }];
 let dataReady: CommandData;
+const roomsArray: Room[] = [];
 let updateRooms = {
   type: 'update_room',
-  data: '[]',
+  data: JSON.stringify(roomsArray),
   id: 0,
 };
 let winnersData: CommandData;
@@ -44,8 +46,6 @@ let currentGamePlayer2: number;
 let turn: CommandData;
 const killedCount = new Map();
 let blockedPlayer: number;
-
-const roomsArray: string[] = [];
 const arrayOfAttack = new Map();
 export const SocketArray: CustomSocket[] = [];
 
@@ -74,9 +74,18 @@ export function switchCommand(dataFromUser: CommandData, ws: CustomSocket) {
       }
       break;
     case 'create_room':
-      updateRooms = createRoom(JSON.parse(dataReady.data));
+      const newRoom = {
+        roomId: Date.now(),
+        roomUsers: [
+          {
+            name: JSON.parse(dataReady.data).name,
+            index: JSON.parse(dataReady.data).index,
+          },
+        ],
+      };
 
-      roomsArray.push(updateRooms.data);
+      roomsArray.push(newRoom);
+      updateRooms = createRoom(roomsArray);
 
       SocketArray.forEach((client) => {
         client.send(JSON.stringify(winnersData));
@@ -88,20 +97,28 @@ export function switchCommand(dataFromUser: CommandData, ws: CustomSocket) {
         roomsArray,
         JSON.parse(dataFromUser.data).indexRoom,
       );
+
       const enemyWs = findWs([...usersCollection.values()], enemyUser);
 
       const gameDataForAdded = createGame(
         JSON.parse(dataFromUser.data).indexRoom,
         ws.id && usersCollection.get(ws.id)!.indexUser,
       );
+
       const gameDataForCreator = createGame(
         JSON.parse(dataFromUser.data).indexRoom,
         enemyUser,
       );
 
+      const gameIndex = roomsArray.findIndex(
+        ({ roomId }) => JSON.parse(dataFromUser.data).indexRoom === roomId,
+      );
+
+      roomsArray.splice(gameIndex, 1);
+
       updateRooms = {
         type: 'update_room',
-        data: '[]',
+        data: JSON.stringify(roomsArray),
         id: 0,
       };
 
@@ -114,6 +131,7 @@ export function switchCommand(dataFromUser: CommandData, ws: CustomSocket) {
 
         client.send(JSON.stringify(updateRooms));
       });
+
       break;
     case 'add_ships':
       players++;
@@ -144,6 +162,7 @@ export function switchCommand(dataFromUser: CommandData, ws: CustomSocket) {
             client.send(JSON.stringify(turn));
           }
         });
+        players = 0;
       }
       break;
     case 'attack':
@@ -280,11 +299,3 @@ function showFinish(player: number, socketId: number) {
     client.send(JSON.stringify(winnersData));
   });
 }
-
-// function deleteOccupiedRoom(roomIndex) {
-//     console.log('deleteFunc data=', updateRooms.data)
-//     console.log('deleteFunc index=', roomIndex)
-
-// }
-
-// function writePlayers(user1, user2) { }
